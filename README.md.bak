@@ -16,6 +16,16 @@ Compatible with Python 3.9.7. Refer to the requirements.txt for the dependencies
 
 Works with the default NERSC python module as of March 13th, 2023.
 
+# Example Use Cases for ImpactT/Z
+
+Example Jupyter notebooks using ImpactT and ImpactZ output files can by found [here](examples/). This package can be useful for creating interesting visualizations of from the particle distributions, such as the ones below:
+
+<p align='center'><img src=".\examples\1-ImpactT_distribution\NormalizedPhaseSpaceVsSlice.png"></p>
+<p align='center'><em>Series of z slices along the normalized x phase space.</em></p>
+
+<p align='center'><img src=".\examples\4-Bunching Factor\bunching_area.gif"></p>
+<p align='center'><em>Transversely binned bunching factor vs wavelength.</em></p>
+
 # Using on NERSC
 
 ### Editable Installation with Custom Environment
