@@ -8,7 +8,7 @@ import numpy as np
 
 import pyPartAnalysis.convert as cv
 
-def read_fort_t(filename,file_extension=[]):    
+def read_fort_t(filename,file_extension=[],on_bad_lines='skip'):    
     """Reads text file of IMPACTT standard fort outputs
     
     Reads in the fort files with the following extensions (and information):
@@ -38,6 +38,9 @@ def read_fort_t(filename,file_extension=[]):
         Extension of the filetype, including the period at the beginning.
         Needed if the name of the file differs from the ones defined in 
         the IMPACT User manual.
+    on_bad_lines : str
+        keyword argument for read_csv. Determines how to handle lines that do 
+        not have the same number of columns as the initial part of the file.
     
     Returns
     -------
@@ -64,7 +67,7 @@ def read_fort_t(filename,file_extension=[]):
         _, file_extension = os.path.splitext(filename)
     
     if file_extension in col_names.keys():
-        df = pd.read_csv(filename,header=None, delimiter=r"\s+",names=col_names[file_extension])
+        df = pd.read_csv(filename,header=None, delimiter=r"\s+",names=col_names[file_extension],on_bad_lines=on_bad_lines)
     else:
         df = pd.DataFrame()
         
