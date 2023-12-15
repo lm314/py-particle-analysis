@@ -132,7 +132,7 @@ def remove_phase_space_corr_poly(df,dim,inds,dimremove=0,degree=1):
     y_original = y_original.values.reshape(-1,1)
     y_uncorr = y_original - y_predict
 
-    df_new.loc[:,dim_dict[dim][ind_y]] = y_uncorr
+    df_new.loc[:,dim_dict[dim][ind_y]] = y_uncorr.reshape(-1,)
     
     return df_new
 
