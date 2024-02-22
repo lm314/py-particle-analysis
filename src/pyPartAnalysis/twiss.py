@@ -212,12 +212,13 @@ def get_twiss_parameters(df,**kwargs):
     GBz = gamma_mean*betaZ_mean
     kwargs_update['GBz'] = GBz
       
-    cov_mat = df_copy.cov()
-    emitn = np.empty((0,3))
+    cov_mat = cv.GB_to_phase_space(df_copy).cov()
+    emit = np.empty((0,3))
     for ii in range(0,3):
-        emitn = np.append(emitn,np.sqrt(np.linalg.det(cov_mat.iloc[(2*ii):(2*ii+2),(2*ii):(2*ii+2)].to_numpy())))
-    beta = np.diagonal(cov_mat,offset=0)[0:5:2]/emitn
-    alpha = -np.diagonal(cov_mat,offset=1)[0:5:2]/emitn   
+        emit = np.append(emit,np.sqrt(np.linalg.det(cov_mat.iloc[(2*ii):(2*ii+2),(2*ii):(2*ii+2)].to_numpy())))
+    emitn = emit*GBz
+    beta = np.diagonal(cov_mat,offset=0)[0:5:2]/emit
+    alpha = -np.diagonal(cov_mat,offset=1)[0:5:2]/emit 
     
     # make vector of length 3 for distribution to each dimension
     kwargs_update = {k:np.repeat(v,[3]) for k,v in kwargs_update.items()}
