@@ -457,6 +457,81 @@ def get_angle_twiss(alpha,beta):
     
     gamma = (1+alpha**2)/beta
     return np.rad2deg(0.5*np.arctan2(2*alpha,gamma-beta))
+
+def twiss_transform_matrix(rmat):
+    """
+    Takes the transport matrix and produces the matrix to transform the Twiss Parameters.
+
+    Parameters
+    ----------
+    rmat : numpy.ndarray or list
+        The transport matrix (assumed to be square).
+
+    Returns
+    -------
+    numpy.ndarray
+        The Twiss Transform Matrix (TTM).
+    """
+    rmat = np.asarray(rmat)  # Convert input to NumPy array
+    if rmat.shape[0] != rmat.shape[1]:
+        raise ValueError('R matrix is not square')
+
+    if rmat.shape[0] % 2 != 0:
+        raise ValueError('rMatrix does not contain matching position or momentum for one of the coordinates')
+
+    n = rmat.shape[0]
+    TTM_blocks = [
+        np.array([
+            [rmat[i - 1, i - 1] ** 2, -2 * rmat[i - 1, i - 1] * rmat[i - 1, i], rmat[i - 1, i] ** 2],
+            [-rmat[i - 1, i - 1] * rmat[i, i - 1], rmat[i - 1, i - 1] * rmat[i, i] + rmat[i - 1, i] * rmat[i, i - 1], -rmat[i - 1, i] * rmat[i, i]],
+            [rmat[i, i - 1] ** 2, -2 * rmat[i, i - 1] * rmat[i, i], rmat[i, i] ** 2]
+        ])
+        for i in range(1, n, 2)
+    ]
+
+    return np.block(TTM_blocks)
+
+def twiss_transform(alpha, beta, gamma, rmat):
+    """
+    Applies transformation to Twiss parameters given a phase space transform matrix (rmat).
+    Gamma can be an empty matrix as it is a function of alpha and beta.
+
+    Parameters
+    ----------
+    alpha : numpy.ndarray or list
+        Array of alpha values.
+    beta : numpy.ndarray or list
+        Array of beta values.
+    gamma : numpy.ndarray or list
+        Array of gamma values (can be empty).
+    rmat : numpy.ndarray or list
+        The transport matrix (assumed to be square).
+
+    Returns
+    -------
+    Tuple
+        (alphaF, betaF, gammaF) after applying the transformation.
+    """
+    alpha, beta, gamma, rmat = map(np.asarray, (alpha, beta, gamma, rmat))  # Convert inputs to NumPy arrays
     
+    if gamma.size == 0:
+        gamma = (1 + alpha**2) / beta
+        
+    if len(alpha) != len(beta) or len(beta) != len(gamma):
+        raise ValueError("Lengths of alpha, beta, and gamma must match")
+
+    n = len(alpha)
+    TTM = twiss_transform_matrix(rmat)
+
+    if TTM.shape[0] / 3 != n:
+        raise ValueError("The number of coordinates in the R matrix does not match the number of coordinates in the Twiss parameter input vectors")
+
+    tVector = np.column_stack((beta, alpha, gamma)).flatten()
+    tVectorF = TTM @ tVector
+    tVectorF = tVectorF.reshape(n, 3).T
+
+    alphaF, betaF, gammaF = tVectorF[1], tVectorF[0], tVectorF[2]
+    return alphaF, betaF, gammaF
+
 if __name__ == '__main__':
     pass
