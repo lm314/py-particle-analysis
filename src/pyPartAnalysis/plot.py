@@ -41,7 +41,7 @@ def det_plot_scale(ps_df,cutoff = 0.9):
     scale = np.floor(np.log10(maxExtent)*cutoff)
     scale = scaleSteps*np.floor(scale/scaleSteps);
     
-    scale_info = {name:scale[idx]
+    scale_info = {name:scale.iloc[idx]
               for idx, name in enumerate(ps_df.columns.values)}  
 
     return scale_info
