@@ -6,6 +6,7 @@ import numpy as np
 
 import pyPartAnalysis.particle_accelerator_utilities as pau
 import pyPartAnalysis.twiss as tw
+import pyPartAnalysis.convert as cv
 
 def GB_to_IMPACTZ(df, rf_freq,charge=-0.160000409601E-18,qoverm = -0.195692801440E-05,id = []):
     """Converts from normalized momentum to ImpactZ format
@@ -174,7 +175,7 @@ def IMPACTT_to_sigma_matrix(df):
     temp = np.swapaxes((np.swapaxes(temp,0,1)),0,2)
     return temp
 
-def phase_space_to_normalized_coord(df):
+def phase_space_to_normalized_coord(df_GB):
     """Normalizes phase space distributions to spherical space
     
     This takes phase space coordinates and converts them 
@@ -190,8 +191,8 @@ def phase_space_to_normalized_coord(df):
     Parameters
     ----------
     df : DataFrame
-        Particle distribution in physical units:
-        x(m),xp(rad),y(m),yp(rad),z,deltaGamma/gamma~deltaP/P
+        Particle distribution in physical units with normalized momentum GB:
+        x(m),GBx,y(m),GBy,z(m),GBz
     
     Returns
     -------
@@ -200,9 +201,12 @@ def phase_space_to_normalized_coord(df):
         x,xp,y,yp,z,deltaGamma/gamma~deltaP/P
     """
     
+    
+    
+    df = cv.GB_to_phase_space(df_GB)
     df_norm = df.copy()
     
-    twiss3d = tw.get_twiss_parameters(df_norm)
+    twiss3d = tw.get_twiss_parameters(df_GB)
     df_norm.x = df.x/np.sqrt(twiss3d.x().beta())
     df_norm.xp = np.sqrt(twiss3d.x().beta())*df.xp + df.x*twiss3d.x().alpha()/np.sqrt(twiss3d.x().beta()) 
     df_norm.y = df.y/np.sqrt(twiss3d.y().beta())
