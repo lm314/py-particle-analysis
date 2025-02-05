@@ -618,7 +618,7 @@ def plot_ellipse_stripe(df_GB,dim,ax=None,cutoff = 0.9,**ax_kwargs):
                                               twiss_tot.beta()[dim_dict[dim]],
                                               twiss_tot.emit()[dim_dict[dim]])
     
-    twiss_stripe = tw.get_twiss_parameters(st.filter_stripe(df,stripe_id_center))
+    twiss_stripe = tw.get_twiss_parameters(st.filter_stripe(df_GB,stripe_id_center))
     x_stripe,y_stripe = tw.twiss_ellipse_parametric(twiss_stripe.alpha()[dim_dict[dim]],
                                                     twiss_stripe.beta()[dim_dict[dim]],
                                                     twiss_stripe.emit()[dim_dict[dim]])
