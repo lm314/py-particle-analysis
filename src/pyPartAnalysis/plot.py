@@ -9,6 +9,7 @@ import numpy as np
 import pyPartAnalysis.transform as tf
 import pyPartAnalysis.stripes as st
 import pyPartAnalysis.twiss as tw
+import pyPartAnalysis.convert as cv
 
 def det_plot_scale(ps_df,cutoff = 0.9):
     """Gives the scalings for a physical particle distribution
@@ -86,27 +87,27 @@ def make_phase_space_axis_labels(dim,scale_info,force_latex=False):
         if plt.rcParams['text.usetex'] is not True and not force_latex:
             label=f"x {space_labels[scale_info]}"
         else:
-            label=f"$x \: {space_labels[scale_info]}$"
+            label=f"$x \\: {space_labels[scale_info]}$"
     elif(dim=='xp'):
         if plt.rcParams['text.usetex'] is not True and not force_latex:
             label=f"x' {transverse_angle_labels[scale_info]}"
         else:
-            label=f"$x^{{\\prime}} \: {transverse_angle_labels[scale_info]}$"
+            label=f"$x^{{\\prime}} \\: {transverse_angle_labels[scale_info]}$"
     if(dim=='y'):
         if (plt.rcParams['text.usetex'] is not True) and not force_latex:
             label=f"y {space_labels[scale_info]}"
         else:
-            label=f"$y \: {space_labels[scale_info]}$"
+            label=f"$y \\: {space_labels[scale_info]}$"
     elif(dim=='yp'):
         if plt.rcParams['text.usetex'] is not True and not force_latex:
             label=f"y' {transverse_angle_labels[scale_info]}"
         else:
-            label=f"$y^{{\\prime}} \: {transverse_angle_labels[scale_info]}$"
+            label=f"$y^{{\\prime}} \\: {transverse_angle_labels[scale_info]}$"
     elif(dim=='z'):
         if plt.rcParams['text.usetex'] is not True and not force_latex:
             label=f"z {space_labels[scale_info]}"
         else:
-            label=f"$z \: {space_labels[scale_info]}$"
+            label=f"$z \\: {space_labels[scale_info]}$"
     elif(dim=='delta'):
         if plt.rcParams['text.usetex'] is not True and not force_latex:
             label=f"delta x 10^{int(-scale_info)}"
@@ -459,7 +460,7 @@ def plot_bunching_factor_vs_wavelength(wavelengths,b0,ax=None,logscale = False,y
     if plt.rcParams['text.usetex'] is not True:
         ax.set_ylabel("|b0| (arb units)")
     else:
-        ax.set_ylabel("$$|b_0|\:(arb.\: units)$$")
+        ax.set_ylabel("$$|b_0|\\:(arb.\\: units)$$")
         
     if(logscale==False):
         ax.plot(wavelengths,b0,**plt_kwargs)
@@ -571,14 +572,14 @@ def plot_mismatch_slice(z,bmag,ax=None,cutoff=0.9,**plt_kwargs):
     
     return ax
     
-def plot_ellipse_stripe(df,dim,ax=None,cutoff = 0.9,**ax_kwargs):
+def plot_ellipse_stripe(df_GB,dim,ax=None,cutoff = 0.9,**ax_kwargs):
     """Plot the RMS ellipse of the overal distribution and the central stripe.
 
     Parameters
     ----------
     ps_df : DataFrame
-        Particle distribution in physical units:
-        x(m),xp(rad),y(m),yp(rad),z,deltaGamma/gamma~deltaP/P
+        Particle distribution in normalized units:
+        x(m),GBx,y(m),GBy,z,GBz
         Has multi-level indexing with 'id' for the particle id and 
         'stripe_id' for the stripe stripe number. 
     ax : matplotlib.axes, optional, default None
@@ -601,6 +602,7 @@ def plot_ellipse_stripe(df,dim,ax=None,cutoff = 0.9,**ax_kwargs):
     
     dim_dict = {'x':0,'y':1,'z':2}
     
+    df = cv.GB_to_phase_space(df_GB)
     scale_info = det_plot_scale(df,cutoff)
     
     if ax is None:
@@ -611,7 +613,7 @@ def plot_ellipse_stripe(df,dim,ax=None,cutoff = 0.9,**ax_kwargs):
     
     stripe_id_center = st.get_center_stripe_id(df,dim=dim)
     
-    twiss_tot = tw.get_twiss_parameters(df)
+    twiss_tot = tw.get_twiss_parameters(df_GB)
     x_tot,y_tot = tw.twiss_ellipse_parametric(twiss_tot.alpha()[dim_dict[dim]],
                                               twiss_tot.beta()[dim_dict[dim]],
                                               twiss_tot.emit()[dim_dict[dim]])
