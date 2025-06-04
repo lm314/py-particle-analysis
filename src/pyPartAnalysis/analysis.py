@@ -8,6 +8,8 @@ from sklearn.linear_model import LinearRegression
 
 import pyPartAnalysis.particle_accelerator_utilities as pau
 import pyPartAnalysis.bunching as bun
+import pyPartAnalysis.twiss as twi
+import pyPartAnalysis.convert as cv
 
 def sigma_to_emit(s_matrix,dim):
     """Calculates emittance from sigma matrix
@@ -508,6 +510,164 @@ def current(df: pd.DataFrame,num_bin: int,total_charge: float,Bz: float = []):
     current = counts/temp.count().z*total_charge/deltaZ*vz
    
     return z_mean, current
-   
+
+def sliceMean(value,weights,axis=0):
+    """
+    Computes the weighted mean of values across slices.
+
+    This function calculates the weighted average of a 1D array of values, 
+    typically representing a quantity computed per slice of a particle distribution.
+
+    Parameters
+    ----------
+    values : array-like
+        Array of values to average, one per slice.
+ 
+    weights : array-like
+        Array of weights corresponding to each slice. Typically the relative 
+        number of particles in each slice. Sum is 1.
+
+    Returns
+    -------
+    float
+        Weighted mean of the input values.
+    """
+
+    return np.average(value,weights=weights,axis=axis)
+
+def sliceCovariance(value1,value2,weights):
+    """
+    Computes the weighted covariance between two slice-wise quantities.
+
+    This function calculates the weighted covariance between two arrays of 
+    slice-wise values. It is useful for evaluating correlations between 
+    slice-averaged quantities or intra-slice statistical properties.
+
+    Parameters
+    ----------
+    value1 : array-like
+        First array of values, one per slice.
+
+    value2 : array-like
+        Second array of values, one per slice.
+
+    weights : array-like
+        Array of weights corresponding to each slice. Typically the relative 
+        number of particles in each slice. Sum is 1.
+
+    Returns
+    -------
+    float
+        Weighted covariance between the two input arrays.
+    """
+
+    mean1 = sliceMean(value1,weights)
+    mean2 = sliceMean(value2,weights)
+    return sliceMean((value1-mean1)*(value2-mean2),weights)
+
+def get_decomposed_normalized_emittance(df, bins,transverse_dimension='x'): 
+    """
+    Computes slice-averaged and correlated emittance metrics from a particle distribution.
+
+    This function processes a particle distribution DataFrame by binning it along the 
+    longitudinal coordinate `z`, computing slice-wise statistics, and evaluating 
+    several emittance-related quantities. It uses normalized momentum coordinates 
+    and assumes the input DataFrame includes columns for position and normalized 
+    momentum. The decomposition is described in https://arxiv.org/abs/1509.04765.
+    Note that the squared sum of the returned components is equal to the square 
+    of the projected normalized emittance.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Particle Distribution with normalized momentum
+        x(m),GBX,y(m),GBy,z,GBz
+ 
+    bins : array-like
+        Bin edges for slicing the distribution along the `z` axis.
+        
+    transverse_dimension : {'x', 'y'}, optional
+        Specifies the transverse dimension for which to compute the emittance 
+        decomposition. Default is 'x'.
+
+
+    Returns
+    -------
+    dict
+        Dictionary containing the following emittance-related metrics:
+ 
+        - epsilon_mean_slice : float
+            Weighted mean of the normalized emittance across slices.
+
+        - epsilon_r : float
+            Emittance growth associated with Twiss parameter mismatch 
+            between slices.
+
+        - epsilon_int : float
+            Emittance growth term associated with a linear correlation 
+            between transverse dimension centroid and z.
+ 
+        - epsilon_parallel : float
+            Emittance growth term associated with a non-linear correlation 
+            between transverse dimension centroid and z.
+    """
+
+    if transverse_dimension == 'x':
+        emit_coord = 0
+        dim_ind = [0,1]
+        dim_coord = ['x','xp']
+    elif transverse_dimension == 'y':
+        emit_coord = 1
+        dim_ind = [2,3]
+        dim_coord = ['y','yp']
+    
+    # group beam based off of z slices
+    group_bins = pd.cut(df['z'], bins=bins)
+    df_groups = df.groupby(group_bins,observed=True)
+    
+    # fraction of the beam in each z slice
+    sliceWeight = df_groups.size().values / df.shape[0]
+
+    # get twiis parameters for each slice
+    twissSlice = twi.get_twiss_z_slices(df, bins)
+    
+    df_ps = cv.GB_to_phase_space(df)
+    df_ps_groups = df_ps.groupby(group_bins,observed=True)
+    
+    # covariance matrix of each z slice
+    cov_slice = df_ps_groups.cov().to_numpy().reshape((6, -1, 6)).transpose(0, 2, 1)
+    
+    # mean values of each z slice
+    mean_slice = df_ps_groups.mean(numeric_only=True)
+
+    # mean normalized emittance of the z slices
+    epsilon_mean_slice = sliceMean(twissSlice["emitn"][:, 0], weights=sliceWeight)
+
+    # covariance of the mean weighted by counts in slice
+    cov_ux_ux = sliceCovariance(mean_slice[dim_coord[0]].values, mean_slice[dim_coord[0]].values, weights=sliceWeight)
+    cov_uxp_uxp = sliceCovariance(mean_slice[dim_coord[1]].values, mean_slice[dim_coord[1]].values, weights=sliceWeight)
+    cov_ux_uxp = sliceCovariance(mean_slice[dim_coord[0]].values, mean_slice[dim_coord[1]].values, weights=sliceWeight)
+
+    epsilon_r2 = (
+        sliceCovariance(twissSlice["emitn"][:, emit_coord], twissSlice["emitn"][:, emit_coord], weights=sliceWeight)
+        + sliceCovariance(cov_slice[dim_ind[0], dim_ind[0], :], cov_slice[dim_ind[1], dim_ind[1], :], weights=sliceWeight)
+        + sliceCovariance(cov_slice[dim_ind[0], dim_ind[1], :], cov_slice[dim_ind[0], dim_ind[1], :], weights=sliceWeight)
+    )
+
+    epsilon_int2 = (
+        sliceMean(cov_slice[dim_ind[0], dim_ind[0], :], weights=sliceWeight) * cov_uxp_uxp
+        + sliceMean(cov_slice[dim_ind[1], dim_ind[1], :], weights=sliceWeight) * cov_ux_ux
+        - 2 * sliceMean(cov_slice[dim_ind[0], dim_ind[1], :], weights=sliceWeight) * cov_ux_uxp
+    )
+
+    epsilon_parallel2 = cov_ux_ux * cov_uxp_uxp - cov_ux_uxp ** 2
+
+    return {
+        "epsilon_mean_slice": epsilon_mean_slice,
+        "epsilon_r": np.sqrt(epsilon_r2),
+        "epsilon_int": np.sqrt(epsilon_int2),
+        "epsilon_parallel": np.sqrt(epsilon_parallel2),
+    }
+
 if __name__ == '__main__':
     pass
