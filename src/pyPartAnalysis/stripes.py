@@ -138,7 +138,7 @@ def stripe_mean(df,dim):
     """
 
         
-    return df.groupby(['stripe_id'])[dim].mean().values
+    return df.groupby(['stripe_id'],observed=True)[dim].mean().values
     
 def stripe_count(df):
     """Returns number of particles in each stripe along a dimension.
@@ -158,7 +158,7 @@ def stripe_count(df):
     numpy.ndarray
         Number of particles in each stripe. 
     """
-    return df.groupby(['stripe_id'])['x'].count().values
+    return df.groupby(['stripe_id'],observed=True)['x'].count().values
     
 def stripe_moving_mean(val,w=2):
     """Calculates the moving average

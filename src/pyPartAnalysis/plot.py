@@ -342,7 +342,7 @@ def plot_color_coded_stripes(df,dim1,dim2,ax=None,cutoff=0.9,**plt_kwargs):
     if ax is None:
         ax = plt.gca()
         
-    groups_many = df.groupby(df.index.get_level_values('stripe_id')) 
+    groups_many = df.groupby(df.index.get_level_values('stripe_id'),observed=True) 
     
     scale_info_output = det_plot_scale(df,cutoff)
 

@@ -252,7 +252,7 @@ def get_twiss_z_slices(df,bins,**kwargs):
     """
     
     group_bins = pd.cut(df['z'],bins=bins)
-    df_groups = df.groupby(group_bins)
+    df_groups = df.groupby(group_bins,observed=True)
     
     z_mean = df_groups['z'].mean().values
     

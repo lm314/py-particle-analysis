@@ -241,9 +241,9 @@ def transverse_bin_counts(df,bins):
     count_area : ndarray, shape=(bins[0],bins[1])
         Number of particles in each transverse bins
     """    
-    count_data = (transverse_bin(df,bins[0],bins[1]).groupby(['bins_x','bins_y'])).count().x
+    count_data = (transverse_bin(df,bins[0],bins[1]).groupby(['bins_x','bins_y'],observed=True)).count().x
     count_area = np.zeros((bins[0],bins[1]))
-    for idx, df_select in count_data.groupby(level=[0, 1]):
+    for idx, df_select in count_data.groupby(level=[0, 1],observed=True):
         count_area[idx[1],idx[0]] = df_select.values
 
     return count_area    
@@ -410,12 +410,12 @@ def get_poly_area(df,dim,deg,num_pixels=[32,32],cut_off=1):
     
     df_new = transverse_bin(df,num_pixels[0],num_pixels[1])
     
-    poly_data = (df_new.groupby(['bins_x','bins_y'])
+    poly_data = (df_new.groupby(['bins_x','bins_y'],observed=True)
                .apply(lambda x: get_poly_fit(x,dim,deg,cut_off)))
     
     poly = np.zeros((num_pixels[0],num_pixels[1],deg+1),dtype=float)
 
-    for idx, df_select in poly_data.groupby(level=[0, 1]):
+    for idx, df_select in poly_data.groupby(level=[0, 1],observed=True):
         nonzero = bun.get_iterable(np.isnan(df_select.values[0]))
         for idz,cond in enumerate(nonzero):
             if(~cond):
@@ -504,7 +504,7 @@ def current(df: pd.DataFrame,num_bin: int,total_charge: float,Bz: float = []):
     c = 299792458
     vz = c*Bz    
 
-    counts = temp.groupby('bin_z').count().z.values
+    counts = temp.groupby('bin_z',observed=True).count().z.values
     current = counts/temp.count().z*total_charge/deltaZ*vz
    
     return z_mean, current

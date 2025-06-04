@@ -180,12 +180,12 @@ def bunching_factor_area(df,wavelengths,num_pixels=[32,32]):
     
     df_new = an.transverse_bin(df,num_pixels[0],num_pixels[1])
     
-    b0_data = (df_new.groupby(['bins_x','bins_y'])["z"]
+    b0_data = (df_new.groupby(['bins_x','bins_y'],observed=True)["z"]
           .apply(lambda x: bunching_factor(x.to_numpy(), wavelengths)))
     
     b0 = np.zeros((num_pixels[1],num_pixels[0],len(wavelengths)),dtype=complex)
 
-    for idx, df_select in b0_data.groupby(level=[0, 1]):
+    for idx, df_select in b0_data.groupby(level=[0, 1],observed=True):
         nonzero = get_iterable(np.isnan(df_select.values[0]))
         for idz,cond in enumerate(nonzero):
             if(~cond):
@@ -229,11 +229,11 @@ def bunching_factor_slice(df,dimSlice,bins,dimBunching,wavelengths):
     
     df_new = df.copy()
     df_new = an.binning(df_new,dimSlice,bins)
-    b0_data = (df_new.groupby([bin_name])[dimBunching]
+    b0_data = (df_new.groupby([bin_name],observed=True)[dimBunching]
       .apply(lambda x: bunching_factor(x.to_numpy(), wavelengths)))
     b0_mat=np.stack(b0_data.to_numpy())
     
-    num_particles_slice = df_new.groupby([bin_name])[dimBunching].count().to_numpy().reshape(bins,1)
+    num_particles_slice = df_new.groupby([bin_name],observed=True)[dimBunching].count().to_numpy().reshape(bins,1)
     
     minVal = df_new[dimSlice].min(axis=0)
     maxVal = df_new[dimSlice].max(axis=0)

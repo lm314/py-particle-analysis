@@ -327,7 +327,7 @@ def filter_by_counts(df,column,bins,cutoff):
     
     df_copy = df.copy()
     df_copy['bin'] = pd.cut(df_copy[column], bins=bins)
-    bin_freq = df_copy.loc[:,[column,'bin']].groupby('bin').count()
+    bin_freq = df_copy.loc[:,[column,'bin']].groupby('bin',observed=True).count()
     df_copy = df_copy.loc[:,['delta','bin']].merge(bin_freq, 
                     on='bin', 
                     how='left',
