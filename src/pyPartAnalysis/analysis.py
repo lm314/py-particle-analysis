@@ -641,7 +641,7 @@ def get_decomposed_normalized_emittance(df, bins,transverse_dimension='x'):
     mean_slice = df_ps_groups.mean(numeric_only=True)
 
     # mean normalized emittance of the z slices
-    epsilon_mean_slice = sliceMean(twissSlice["emitn"][:, 0], weights=sliceWeight)
+    epsilon_mean_slice = sliceMean(twissSlice["emitn"][:, emit_coord], weights=sliceWeight)
 
     # covariance of the mean weighted by counts in slice
     cov_ux_ux = sliceCovariance(mean_slice[dim_coord[0]].values, mean_slice[dim_coord[0]].values, weights=sliceWeight)
