@@ -635,7 +635,7 @@ def get_decomposed_normalized_emittance(df, bins,transverse_dimension='x'):
     df_ps_groups = df_ps.groupby(group_bins,observed=True)
     
     # covariance matrix of each z slice
-    cov_slice = df_ps_groups.cov().to_numpy().reshape((6, -1, 6)).transpose(0, 2, 1)
+    cov_slice = df_ps_groups.cov().to_numpy().reshape(-1, 6, 6).transpose(1, 2, 0)
     
     # mean values of each z slice
     mean_slice = df_ps_groups.mean(numeric_only=True)
@@ -650,7 +650,7 @@ def get_decomposed_normalized_emittance(df, bins,transverse_dimension='x'):
 
     epsilon_r2 = (
         sliceCovariance(twissSlice["emitn"][:, emit_coord], twissSlice["emitn"][:, emit_coord], weights=sliceWeight)
-        + sliceCovariance(cov_slice[dim_ind[0], dim_ind[0], :], cov_slice[dim_ind[1], dim_ind[1], :], weights=sliceWeight)
+        - sliceCovariance(cov_slice[dim_ind[0], dim_ind[0], :], cov_slice[dim_ind[1], dim_ind[1], :], weights=sliceWeight)
         + sliceCovariance(cov_slice[dim_ind[0], dim_ind[1], :], cov_slice[dim_ind[0], dim_ind[1], :], weights=sliceWeight)
     )
 
