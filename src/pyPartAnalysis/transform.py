@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
     
-def remove_phase_space_corr(df,dim,inds,dimremove=0):
+def remove_phase_space_corr(df,dim,inds=[],dimremove=0):
     """Removes correlation using using the specified particles
     
     Removes a linear correlation in phase space for all particles 
@@ -23,7 +23,8 @@ def remove_phase_space_corr(df,dim,inds,dimremove=0):
     dim : {'x', 'y', 'z'} 
         Dimension along which correlation is removed
     inds : array_like
-        Indices of the particles that are used to calculate the correlation
+        Indices of the particles that are used to calculate the correlation. 
+        Default is to use the full dataframe df.
     dimremove : {0, 1}
         Indicates which dimension of phase space the correlation will be 
         removed from. 0 for the spatial or 1 for the compliment.
@@ -47,7 +48,10 @@ def remove_phase_space_corr(df,dim,inds,dimremove=0):
     ind_x = np.mod(dimremove+1,2)
     
     df_new = df.copy()
-    fit_df = df_new.loc[inds,:]
+    if not inds:
+        fit_df = df_new
+    else:
+        fit_df = df_new.loc[inds,:]
     y = fit_df[dim_dict[dim][ind_y]] - fit_df[dim_dict[dim][ind_y]].mean()
     y = y.values.reshape(-1,1)
     x = fit_df[dim_dict[dim][ind_x]] - fit_df[dim_dict[dim][ind_x]].mean()
@@ -64,11 +68,11 @@ def remove_phase_space_corr(df,dim,inds,dimremove=0):
     y_original = y_original.values.reshape(-1,1)
     y_uncorr = y_original - y_predict
 
-    df_new.loc[:,dim_dict[dim][ind_y]] = y_uncorr
+    df_new.loc[:,dim_dict[dim][ind_y]] = y_uncorr.ravel()
     
     return df_new
 
-def remove_phase_space_corr_poly(df,dim,inds,dimremove=0,degree=1):
+def remove_phase_space_corr_poly(df,dim,inds=[],dimremove=0,degree=1):
     """Removes polynomial correlation using using the specified particles
     
     Removes a polynomial correlation in phase space for all particles using a 
@@ -84,7 +88,8 @@ def remove_phase_space_corr_poly(df,dim,inds,dimremove=0,degree=1):
     dim : {'x', 'y', 'z'} 
         Dimension to be plotted
     inds : array_like
-        Indices of the particles that are used to calculate the correlation
+        Indices of the particles that are used to calculate the correlation.
+        Default is to use the full dataframe df.
     dimremove : {0, 1}
         Indicates which dimension of phase space the correlation will be 
         removed from. 0 for the spatial or 1 for the compliment.
@@ -112,7 +117,11 @@ def remove_phase_space_corr_poly(df,dim,inds,dimremove=0,degree=1):
     ind_x = np.mod(dimremove+1,2)
     
     df_new = df.copy()
-    fit_df = df_new.loc[inds,:]
+    if not inds:
+        fit_df = df_new
+    else:
+        fit_df = df_new.loc[inds,:]
+        
     y = fit_df[dim_dict[dim][ind_y]] - fit_df[dim_dict[dim][ind_y]].mean()
     y = y.values.reshape(-1,1)
     x = fit_df[dim_dict[dim][ind_x]] - fit_df[dim_dict[dim][ind_x]].mean()
@@ -136,7 +145,7 @@ def remove_phase_space_corr_poly(df,dim,inds,dimremove=0,degree=1):
     
     return df_new
 
-def remove_2D_linear_corr(df,dim,inds,dimremove):
+def remove_2D_linear_corr(df,dim,dimremove,inds=[]):
     """Removes multidimensional linear correlation using the specified particles
     
     Removes a multidimensional linear correlation in phase space for all particles using a 
@@ -149,11 +158,12 @@ def remove_2D_linear_corr(df,dim,inds,dimremove):
         x(m),xp(rad),y(m),yp(rad),z,deltaGamma/gamma~deltaP/P
     dim : list {'x', 'xp', 'y', 'yp', 'z', 'delta'} 
         Dependent Variable
-    inds : array_like
-        Indices of the particles that are used to calculate the correlation
     dimremove : {'x', 'xp', 'y', 'yp', 'z', 'delta'} 
         Indicates which dimension of phase space the correlation will be 
         removed from.
+    inds : array_like
+        Indices of the particles that are used to calculate the correlation.
+        Default is to use the full dataframe df.
 
     Returns
     -------
@@ -163,7 +173,10 @@ def remove_2D_linear_corr(df,dim,inds,dimremove):
     """   
     
     df_new = df.copy()
-    fit_df = df_new.loc[inds,:]
+    if not inds:
+        fit_df = df_new
+    else:
+        fit_df = df_new.loc[inds,:]
     y = fit_df.loc[:,dimremove] - fit_df.loc[:,dimremove].mean()
     y = y.values.reshape(-1,1)
     x = fit_df.loc[:,dim] - fit_df.loc[:,dim].mean()
@@ -184,11 +197,11 @@ def remove_2D_linear_corr(df,dim,inds,dimremove):
     y_original = y_original.values.reshape(-1,1)
     y_uncorr = y_original - y_predict
 
-    df_new.loc[:,dimremove] = y_uncorr
+    df_new.loc[:,dimremove] = y_uncorr.ravel()
     
     return df_new
 
-def remove_2D_corr_poly(df,dim1,dim2,inds,degree):
+def remove_2D_corr_poly(df,dim1,dim2,inds=[],degree=1):
     """Removes multidimensional polynomial correlation using the specified particles
     
     Removes a multidimensional polynomial correlation in phase space for all particles using a 
@@ -205,7 +218,8 @@ def remove_2D_corr_poly(df,dim1,dim2,inds,degree):
         Indicates which dimension of phase space the correlation will be 
         removed from.
     inds : array_like
-        Indices of the particles that are used to calculate the correlation
+        Indices of the particles that are used to calculate the correlation. 
+        Default is to use the full dataframe df.
     degree : int > 0
         Degree of the polynomial for which the correlation will be removed.
 
@@ -217,7 +231,10 @@ def remove_2D_corr_poly(df,dim1,dim2,inds,degree):
     """   
     
     df_new = df.copy()
-    fit_df = df_new.loc[inds,:]
+    if not inds:
+        fit_df = df_new
+    else:
+        fit_df = df_new.loc[inds,:]
     y = fit_df.loc[:,dim2] - fit_df.loc[:,dim2].mean()
     y = y.values.reshape(-1,1)
     x = fit_df.loc[:,dim1] - fit_df.loc[:,dim1].mean()
@@ -238,7 +255,7 @@ def remove_2D_corr_poly(df,dim1,dim2,inds,degree):
     y_original = y_original.values.reshape(-1,1)
     y_uncorr = y_original - y_predict
 
-    df_new.loc[:,dim2] = y_uncorr
+    df_new.loc[:,dim2] = y_uncorr.ravel()
     
     return df_new
 
@@ -281,7 +298,7 @@ def add_phase_space_corr(df,dim,slope):
     
     y_predict = slope*x
     y_corr = y - y_predict
-    fit_df.loc[:,dim_dict[dim][0]] = y_corr
+    fit_df.loc[:,dim_dict[dim][0]] = y_corr.ravel()
     
     return fit_df
     
@@ -327,7 +344,7 @@ def filter_by_counts(df,column,bins,cutoff):
     
     df_copy = df.copy()
     df_copy['bin'] = pd.cut(df_copy[column], bins=bins)
-    bin_freq = df_copy.loc[:,[column,'bin']].groupby('bin',observed=True).count()
+    bin_freq = df_copy.loc[:,[column,'bin']].groupby('bin').count()
     df_copy = df_copy.loc[:,['delta','bin']].merge(bin_freq, 
                     on='bin', 
                     how='left',
