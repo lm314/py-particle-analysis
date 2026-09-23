@@ -205,20 +205,34 @@ def get_twiss_parameters(df,**kwargs):
            
     df_copy = df.copy()
     kwargs_update = kwargs
-   
-    gammaL = pau.gammabeta2gamma(df_copy.GBx,df_copy.GBy,df_copy.GBz)
-    gamma_mean = np.mean(gammaL)
-    betaZ_mean = np.mean(df.GBz/gammaL)
-    GBz = gamma_mean*betaZ_mean
-    kwargs_update['GBz'] = GBz
-      
+
+    # Use the bunch-mean GBz as the normalization factor for geometric<->normalized
+    # conversion in the Twiss object. This avoids the low-energy bias from using
+    # product-of-means estimates (gamma_mean * betaZ_mean).
+    GBz_mean = float(np.mean(df_copy.GBz))
+    kwargs_update['GBz'] = GBz_mean
+
+    # Build geometric phase-space coordinates for Twiss alpha/beta/emit.
+    # For small angles, GBx/GBz ~ x'. Keep this convention for compatibility
+    # with existing analysis utilities and plots.
     cov_mat = cv.GB_to_phase_space(df_copy).cov()
     emit = np.empty((0,3))
     for ii in range(0,3):
-        emit = np.append(emit,np.sqrt(np.linalg.det(cov_mat.iloc[(2*ii):(2*ii+2),(2*ii):(2*ii+2)].to_numpy())))
-    emitn = emit*GBz
-    beta = np.diagonal(cov_mat,offset=0)[0:5:2]/emit
-    alpha = -np.diagonal(cov_mat,offset=1)[0:5:2]/emit 
+        sub_cov = cov_mat.iloc[(2*ii):(2*ii+2),(2*ii):(2*ii+2)].to_numpy()
+        emit = np.append(emit, np.sqrt(max(np.linalg.det(sub_cov), 0.0)))
+
+    # Compute normalized emittance directly in (x, GBx) and (y, GBy) space.
+    # This is the robust definition and remains accurate at low energies.
+    cov_x_gbx = df_copy[['x', 'GBx']].cov().to_numpy()
+    cov_y_gby = df_copy[['y', 'GBy']].cov().to_numpy()
+    emitn_x = np.sqrt(max(np.linalg.det(cov_x_gbx), 0.0))
+    emitn_y = np.sqrt(max(np.linalg.det(cov_y_gby), 0.0))
+    emitn = np.array([emitn_x, emitn_y, emit[2] * GBz_mean], dtype=float)
+
+    diag = np.diagonal(cov_mat,offset=0)[0:5:2]
+    offdiag = np.diagonal(cov_mat,offset=1)[0:5:2]
+    beta = np.divide(diag, emit, out=np.full(3, np.nan), where=emit > 0)
+    alpha = np.divide(-offdiag, emit, out=np.full(3, np.nan), where=emit > 0)
     
     # make vector of length 3 for distribution to each dimension
     kwargs_update = {k:np.repeat(v,[3]) for k,v in kwargs_update.items()}
